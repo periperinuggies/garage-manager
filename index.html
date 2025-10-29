@@ -12,6 +12,7 @@
             <div class="header-buttons">
                 <button id="addCarBtn" class="btn-primary btn-compact">+ Car</button>
                 <button id="addBikeBtn" class="btn-primary btn-compact">+ Bike</button>
+                <button id="godModeBtn" class="btn-god btn-compact">👑 God Mode</button>
             </div>
             <h1>🏎️ ACME Warehouse Manager</h1>
             <div id="locationInfo" class="location-info">
@@ -271,6 +272,44 @@
 
                     <div id="serviceHistoryList" class="service-list"></div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- God Mode Login Modal -->
+    <div id="godLoginModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>👑 God Mode Access</h2>
+                <span class="close" id="closeGodLogin">&times;</span>
+            </div>
+            <form id="godLoginForm">
+                <div class="form-group">
+                    <label for="godUsername">Username</label>
+                    <input type="text" id="godUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="godPassword">Password</label>
+                    <input type="password" id="godPassword" required>
+                </div>
+                <div id="godLoginError" style="color: var(--danger-color); margin-bottom: 10px; display: none;">Invalid credentials</div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelGodLogin">Cancel</button>
+                    <button type="submit" class="btn-primary">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- God Mode Master List Modal -->
+    <div id="godMasterListModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2>👑 God Mode - Master Vehicle List</h2>
+                <span class="close" id="closeGodMaster">&times;</span>
+            </div>
+            <div id="godMasterList" class="god-master-list">
+                <!-- Master list will be rendered here -->
             </div>
         </div>
     </div>

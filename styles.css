@@ -107,6 +107,18 @@ header h1 {
     box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
 }
 
+.btn-god {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #1f2937;
+    font-weight: 700;
+}
+
+.btn-god:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(251, 191, 36, 0.5);
+}
+
 .btn-secondary {
     background: var(--secondary-color);
     color: white;
@@ -1017,4 +1029,64 @@ header h1 {
     .floor-spots {
         grid-template-columns: 1fr;
     }
+}
+
+/* God Mode Master List */
+.god-master-list {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.god-master-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.god-master-table th,
+.god-master-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.god-master-table th {
+    background: var(--surface-light);
+    color: var(--text-primary);
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.god-master-table tr:hover {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+.god-master-table .vehicle-type-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.god-master-table .vehicle-type-car {
+    background: rgba(37, 99, 235, 0.2);
+    color: var(--primary-color);
+}
+
+.god-master-table .vehicle-type-bike {
+    background: rgba(139, 92, 246, 0.2);
+    color: #a78bfa;
+}
+
+.god-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.75rem;
 }

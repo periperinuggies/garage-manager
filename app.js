@@ -9,6 +9,9 @@ class GarageManager {
         this.currentVehicleType = 'car';
         this.draggedVehicleType = null; // Track type during drag
         this.isLocalUpdate = false; // Track if update is from this user
+        this.godModeActive = false;
+        this.GOD_USERNAME = 'god';
+        this.GOD_PASSWORD = 'godmodebaby';
         this.init();
     }
 
@@ -85,6 +88,8 @@ class GarageManager {
     }
 
     saveData() {
+        console.log('SAVEDATA: Saving to Firebase. Vehicle count:', this.vehicles.length);
+
         // Save to Firebase
         const data = {
             vehicles: this.vehicles,
@@ -97,12 +102,13 @@ class GarageManager {
         this.isLocalUpdate = true;
 
         this.dbRef.set(data).then(() => {
+            console.log('SAVEDATA: Firebase save successful');
             // Success - also save to localStorage as backup
             localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
             localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
             localStorage.setItem('bikeSlots', JSON.stringify(this.bikeSlots));
         }).catch((error) => {
-            console.error('Error saving data:', error);
+            console.error('SAVEDATA: Error saving data:', error);
             this.isLocalUpdate = false; // Reset flag on error
             // Fallback to localStorage if Firebase fails
             localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
@@ -114,8 +120,11 @@ class GarageManager {
     setupRealtimeListeners() {
         // Listen for changes from other users
         this.dbRef.on('value', (snapshot) => {
+            console.log('FIREBASE LISTENER: Received update');
+
             // Skip the first load (handled by loadData)
             if (this.isFirstLoad) {
+                console.log('FIREBASE LISTENER: Skipping first load');
                 this.isFirstLoad = false;
                 return;
             }
@@ -124,12 +133,14 @@ class GarageManager {
 
             // Skip if this is our own update
             if (this.isLocalUpdate) {
+                console.log('FIREBASE LISTENER: Skipping own update');
                 this.isLocalUpdate = false;
                 return;
             }
 
             // Update from another user or browser tab
             if (data) {
+                console.log('FIREBASE LISTENER: Applying remote update. Vehicle count:', data.vehicles ? data.vehicles.length : 0);
                 this.vehicles = data.vehicles || [];
                 this.parkingSpots = data.parkingSpots || {};
                 this.bikeSlots = data.bikeSlots || {};
@@ -205,6 +216,28 @@ class GarageManager {
                 this.deleteVehicle(this.currentViewingVehicleId);
             }
         });
+
+        // God Mode Buttons
+        document.getElementById('godModeBtn').addEventListener('click', () => {
+            this.openGodLogin();
+        });
+
+        document.getElementById('godLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleGodLogin();
+        });
+
+        document.getElementById('cancelGodLogin').addEventListener('click', () => {
+            this.closeModals();
+        });
+
+        document.getElementById('closeGodLogin').addEventListener('click', () => {
+            this.closeModals();
+        });
+
+        document.getElementById('closeGodMaster').addEventListener('click', () => {
+            this.closeModals();
+        });
     }
 
     // Vehicle Modal
@@ -273,6 +306,11 @@ class GarageManager {
         const vehicleType = document.getElementById('vehicleType').value;
         const vehicleId = document.getElementById('vehicleId').value || this.generateId();
 
+        console.log('=== SAVING VEHICLE ===');
+        console.log('Vehicle ID:', vehicleId);
+        console.log('Vehicle Type:', vehicleType);
+        console.log('Is editing?', !!this.currentEditingVehicleId);
+
         const baseData = {
             id: vehicleId,
             vehicleType: vehicleType,
@@ -322,15 +360,21 @@ class GarageManager {
             const index = this.vehicles.findIndex(v => v.id === vehicleId);
             if (index !== -1) {
                 this.vehicles[index] = vehicleData;
+                console.log('Updated vehicle at index', index);
             }
         } else {
             // Add new vehicle
             this.vehicles.push(vehicleData);
+            console.log('Added new vehicle. Total vehicles:', this.vehicles.length);
         }
+
+        console.log('Vehicle data:', vehicleData);
+        console.log('All vehicles:', this.vehicles);
 
         this.saveData();
         this.renderVehicles();
         this.closeModals();
+        console.log('=== SAVE VEHICLE COMPLETE ===');
     }
 
     deleteVehicle(vehicleId) {
@@ -352,8 +396,14 @@ class GarageManager {
     closeModals() {
         document.getElementById('vehicleModal').classList.remove('show');
         document.getElementById('vehicleDetailsModal').classList.remove('show');
+        document.getElementById('godLoginModal').classList.remove('show');
+        document.getElementById('godMasterListModal').classList.remove('show');
         this.currentEditingVehicleId = null;
         this.currentViewingVehicleId = null;
+        // Clear god login form
+        document.getElementById('godUsername').value = '';
+        document.getElementById('godPassword').value = '';
+        document.getElementById('godLoginError').style.display = 'none';
     }
 
     // Vehicle Details Modal
@@ -940,6 +990,118 @@ class GarageManager {
         if (vehicle) {
             vehicle.isCharging = isCharging;
             this.saveData();
+        }
+    }
+
+    // God Mode Functions
+    openGodLogin() {
+        document.getElementById('godLoginModal').classList.add('show');
+    }
+
+    handleGodLogin() {
+        const username = document.getElementById('godUsername').value;
+        const password = document.getElementById('godPassword').value;
+
+        if (username === this.GOD_USERNAME && password === this.GOD_PASSWORD) {
+            this.godModeActive = true;
+            document.getElementById('godLoginModal').classList.remove('show');
+            this.openGodMasterList();
+        } else {
+            document.getElementById('godLoginError').style.display = 'block';
+        }
+    }
+
+    openGodMasterList() {
+        document.getElementById('godMasterListModal').classList.add('show');
+        this.renderGodMasterList();
+    }
+
+    renderGodMasterList() {
+        const container = document.getElementById('godMasterList');
+
+        if (this.vehicles.length === 0) {
+            container.innerHTML = '<p style="padding: 20px; text-align: center; color: var(--text-secondary);">No vehicles in system</p>';
+            return;
+        }
+
+        let html = `
+            <table class="god-master-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>Make/Model</th>
+                        <th>Year</th>
+                        <th>Owner</th>
+                        <th>Plate</th>
+                        <th>Location</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        this.vehicles.forEach(vehicle => {
+            const location = this.getVehicleLocation(vehicle);
+            const typeBadge = vehicle.vehicleType === 'car' ?
+                '<span class="vehicle-type-badge vehicle-type-car">🚗 Car</span>' :
+                '<span class="vehicle-type-badge vehicle-type-bike">🏍️ Bike</span>';
+
+            html += `
+                <tr>
+                    <td>${typeBadge}</td>
+                    <td>${vehicle.make} ${vehicle.model}</td>
+                    <td>${vehicle.year}</td>
+                    <td>${vehicle.owner}</td>
+                    <td>${vehicle.plate || 'N/A'}</td>
+                    <td>${location}</td>
+                    <td>
+                        <div class="god-actions">
+                            <button class="btn-primary btn-sm" onclick="garageManager.godEditVehicle('${vehicle.id}')">Edit</button>
+                            <button class="btn-danger btn-sm" onclick="garageManager.godDeleteVehicle('${vehicle.id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    getVehicleLocation(vehicle) {
+        // Check if car is in a parking spot
+        for (const [spotId, vehicleId] of Object.entries(this.parkingSpots)) {
+            if (vehicleId === vehicle.id) {
+                return spotId.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+        }
+
+        // Check if bike is in a slot
+        for (const [slotNum, vehicleId] of Object.entries(this.bikeSlots)) {
+            if (vehicleId === vehicle.id) {
+                return `Bike Slot ${slotNum}`;
+            }
+        }
+
+        return 'Available Pool';
+    }
+
+    godEditVehicle(vehicleId) {
+        const vehicle = this.vehicles.find(v => v.id === vehicleId);
+        if (vehicle) {
+            this.closeModals();
+            this.openVehicleModal(vehicle.vehicleType || 'car', vehicleId);
+        }
+    }
+
+    godDeleteVehicle(vehicleId) {
+        if (confirm('GOD MODE: Are you sure you want to permanently delete this vehicle?')) {
+            console.log('God deleting vehicle:', vehicleId);
+            this.deleteVehicle(vehicleId);
+            // Refresh the master list
+            if (document.getElementById('godMasterListModal').classList.contains('show')) {
+                this.renderGodMasterList();
+            }
         }
     }
 
