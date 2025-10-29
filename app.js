@@ -702,6 +702,160 @@ class GarageManager {
     // Drag and Drop
     setupDragAndDrop() {
         this.setupDragListeners();
+        this.setupTouchSupport();
+    }
+
+    // Touch support for mobile
+    setupTouchSupport() {
+        let draggedElement = null;
+        let draggedVehicleId = null;
+        let draggedVehicleType = null;
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            const card = e.target.closest('.vehicle-card');
+            if (card) {
+                draggedElement = card;
+                draggedVehicleId = card.dataset.vehicleId;
+                draggedVehicleType = card.dataset.vehicleType;
+                this.draggedVehicleType = draggedVehicleType;
+
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+
+                card.classList.add('dragging');
+                card.style.opacity = '0.5';
+            }
+        });
+
+        document.addEventListener('touchmove', (e) => {
+            if (!draggedElement) return;
+            e.preventDefault();
+
+            const touch = e.touches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            // Clear previous highlights
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+            // Highlight drop target
+            if (elementBelow) {
+                const dropTarget = elementBelow.closest('.parking-spot, .bike-slot, .vehicle-pool');
+                if (dropTarget) {
+                    dropTarget.classList.add('drag-over');
+                }
+            }
+        });
+
+        document.addEventListener('touchend', (e) => {
+            if (!draggedElement) return;
+
+            const touch = e.changedTouches[0];
+            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+            draggedElement.classList.remove('dragging');
+            draggedElement.style.opacity = '';
+
+            // Clear highlights
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+            if (elementBelow) {
+                // Handle drop on parking spot (cars)
+                const parkingSpot = elementBelow.closest('.parking-spot[data-vehicle-type="car"]');
+                if (parkingSpot && draggedVehicleType === 'car') {
+                    const position = parkingSpot.dataset.position;
+                    // Check if occupied
+                    if (this.parkingSpots[position] && this.parkingSpots[position] !== draggedVehicleId) {
+                        draggedElement = null;
+                        return;
+                    }
+                    // Remove from previous spot
+                    Object.keys(this.parkingSpots).forEach(spot => {
+                        if (this.parkingSpots[spot] === draggedVehicleId) {
+                            delete this.parkingSpots[spot];
+                        }
+                    });
+                    // Add to new spot
+                    this.parkingSpots[position] = draggedVehicleId;
+                    this.saveData();
+                    this.renderVehicles();
+                    this.setupDragListeners();
+                    this.setupTouchSupport();
+                }
+
+                // Handle drop on bike slot
+                const bikeSlot = elementBelow.closest('.bike-slot');
+                if (bikeSlot && draggedVehicleType === 'bike') {
+                    const slotNumber = bikeSlot.dataset.slotNumber;
+                    // Check if occupied
+                    if (this.bikeSlots[slotNumber] && this.bikeSlots[slotNumber] !== draggedVehicleId) {
+                        draggedElement = null;
+                        return;
+                    }
+                    // Remove from previous slot
+                    Object.keys(this.bikeSlots).forEach(slot => {
+                        if (this.bikeSlots[slot] === draggedVehicleId) {
+                            delete this.bikeSlots[slot];
+                        }
+                    });
+                    // Add to new slot
+                    this.bikeSlots[slotNumber] = draggedVehicleId;
+                    this.saveData();
+                    this.renderVehicles();
+                    this.setupDragListeners();
+                    this.setupTouchSupport();
+                }
+
+                // Handle drop on available pool
+                const availableCarsList = elementBelow.closest('#availableCarsList');
+                const availableBikesList = elementBelow.closest('#availableBikesList');
+
+                if (availableCarsList && draggedVehicleType === 'car') {
+                    // Unpark car
+                    Object.keys(this.parkingSpots).forEach(spot => {
+                        if (this.parkingSpots[spot] === draggedVehicleId) {
+                            delete this.parkingSpots[spot];
+                        }
+                    });
+                    this.saveData();
+                    this.renderVehicles();
+                    this.setupDragListeners();
+                    this.setupTouchSupport();
+                }
+
+                if (availableBikesList && draggedVehicleType === 'bike') {
+                    // Unpark bike
+                    Object.keys(this.bikeSlots).forEach(slot => {
+                        if (this.bikeSlots[slot] === draggedVehicleId) {
+                            delete this.bikeSlots[slot];
+                        }
+                    });
+                    this.saveData();
+                    this.renderVehicles();
+                    this.setupDragListeners();
+                    this.setupTouchSupport();
+                }
+            }
+
+            draggedElement = null;
+            draggedVehicleId = null;
+            draggedVehicleType = null;
+            this.draggedVehicleType = null;
+        });
+
+        document.addEventListener('touchcancel', () => {
+            if (draggedElement) {
+                draggedElement.classList.remove('dragging');
+                draggedElement.style.opacity = '';
+            }
+            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            draggedElement = null;
+            draggedVehicleId = null;
+            draggedVehicleType = null;
+            this.draggedVehicleType = null;
+        });
     }
 
     setupDragListeners() {

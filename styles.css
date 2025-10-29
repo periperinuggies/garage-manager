@@ -1090,3 +1090,371 @@ header h1 {
     padding: 6px 12px;
     font-size: 0.75rem;
 }
+
+/* ===================================
+   MOBILE OPTIMIZATION
+   =================================== */
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    /* Mobile Header - More Compact */
+    header {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+        order: 1;
+        text-align: center;
+    }
+
+    .header-buttons {
+        order: 2;
+        justify-content: center;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .btn-compact {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+
+    .location-info {
+        order: 3;
+        text-align: center;
+        font-size: 0.7rem;
+    }
+
+    /* Mobile Layout - Vertical Stack */
+    .garage-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 180px; /* Space for floating footer */
+    }
+
+    /* Stackers First - Side by Side */
+    .main-garage {
+        order: 1;
+        width: 100%;
+    }
+
+    .stackers-section {
+        display: flex;
+        flex-direction: row;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+
+    .stacker-column {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .stacker h3, .floor-bays h3 {
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+
+    .parking-spot {
+        min-height: 80px;
+        padding: 8px;
+    }
+
+    .spot-label {
+        font-size: 0.7rem;
+    }
+
+    /* Stacker bars - thinner on mobile */
+    .stacker::before,
+    .stacker::after {
+        width: 8px;
+    }
+
+    .stacker .parking-spot:not(:last-child)::after {
+        height: 8px;
+        left: -8px;
+        right: -8px;
+        bottom: -4px;
+    }
+
+    /* Lift Bay Second */
+    .lift-section {
+        order: 2;
+        width: 100%;
+        margin-bottom: 15px;
+    }
+
+    .lift-section h3 {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .lift {
+        min-height: 90px;
+    }
+
+    /* Bike Storage Third - Full Width */
+    .bike-section {
+        order: 3;
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .bike-section h3 {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+
+    .bike-storage {
+        height: 400px;
+        max-height: 400px;
+        padding: 8px;
+        gap: 4px;
+    }
+
+    .bike-slot {
+        min-height: 60px;
+        font-size: 0.85rem;
+    }
+
+    .bike-slot::before {
+        font-size: 0.65rem;
+        top: 3px;
+        left: 6px;
+    }
+
+    /* Vehicle Cards - More Compact */
+    .vehicle-card {
+        min-height: 70px;
+        padding: 8px;
+    }
+
+    .vehicle-title {
+        max-width: 100px;
+    }
+
+    .vehicle-name {
+        font-size: 0.8rem;
+    }
+
+    .vehicle-year {
+        font-size: 0.7rem;
+    }
+
+    .vehicle-info {
+        font-size: 0.75rem;
+        gap: 3px;
+    }
+
+    .charging-indicator {
+        font-size: 0.8rem;
+    }
+
+    .charging-indicator input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+    }
+
+    /* Bike Cards - Even More Compact */
+    .bike-card {
+        min-height: 55px;
+        max-height: 55px;
+    }
+
+    .bike-card .vehicle-title {
+        max-width: 90px;
+    }
+
+    .bike-card .vehicle-name {
+        font-size: 0.75rem;
+    }
+
+    .bike-card .vehicle-year {
+        font-size: 0.65rem;
+    }
+
+    .bike-card .vehicle-info {
+        font-size: 0.7rem;
+    }
+
+    .bike-card .charging-indicator {
+        font-size: 0.7rem;
+    }
+
+    .bike-card .charging-indicator input[type="checkbox"] {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Mobile Footer - Smaller */
+    .available-vehicles-bar {
+        padding: 8px 10px;
+        gap: 10px;
+        max-height: 150px;
+    }
+
+    .available-pool h3 {
+        font-size: 0.7rem;
+        margin-bottom: 4px;
+    }
+
+    .vehicle-pool {
+        gap: 6px;
+        max-height: 110px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    /* Modals - Full Screen on Mobile */
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        margin: 20px auto;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-content.large {
+        width: 98%;
+        max-width: 98%;
+    }
+
+    .modal-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .form-group label {
+        font-size: 0.85rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 0.9rem;
+        padding: 8px;
+    }
+
+    /* God Mode Table - Horizontal Scroll */
+    .god-master-list {
+        max-height: 60vh;
+        overflow-x: auto;
+    }
+
+    .god-master-table {
+        font-size: 0.8rem;
+        min-width: 600px;
+    }
+
+    .god-master-table th,
+    .god-master-table td {
+        padding: 8px 6px;
+    }
+
+    .vehicle-type-badge {
+        font-size: 0.65rem !important;
+        padding: 3px 6px !important;
+    }
+
+    .btn-sm {
+        padding: 4px 8px;
+        font-size: 0.7rem;
+    }
+
+    /* Touch-Friendly Buttons */
+    button {
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    .btn-compact {
+        min-height: 38px;
+    }
+
+    /* Service History */
+    .service-form {
+        padding: 10px;
+    }
+
+    .service-item {
+        padding: 10px;
+        font-size: 0.85rem;
+    }
+
+    /* Details Modal */
+    .details-info {
+        font-size: 0.85rem;
+    }
+
+    .detail-row {
+        padding: 8px 0;
+    }
+}
+
+/* Small Mobile (iPhone SE, etc) */
+@media (max-width: 375px) {
+    header h1 {
+        font-size: 1rem;
+    }
+
+    .btn-compact {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+    }
+
+    .location-info {
+        font-size: 0.65rem;
+    }
+
+    .stackers-section {
+        flex-direction: column;
+    }
+
+    .stacker-column {
+        width: 100%;
+    }
+
+    .parking-spot {
+        min-height: 70px;
+    }
+
+    .vehicle-card {
+        min-height: 65px;
+    }
+
+    .bike-storage {
+        height: 350px;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .garage-layout {
+        margin-bottom: 120px;
+    }
+
+    .bike-storage {
+        height: 250px;
+        max-height: 250px;
+    }
+
+    .available-vehicles-bar {
+        max-height: 100px;
+    }
+
+    .vehicle-pool {
+        max-height: 70px;
+    }
+}
