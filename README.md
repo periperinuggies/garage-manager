@@ -35,11 +35,60 @@ A visual digital twin for managing shared vehicle storage in a warehouse with tr
   - Track maintenance records for each vehicle
   - Log service type, date, mileage, cost, and notes
 
+## Firebase Setup (Required for Shared Access)
+
+**IMPORTANT:** Before using the app, you need to set up Firebase so everyone can see the same garage!
+
+1. **Create a Firebase Project**
+   - Go to https://console.firebase.google.com/
+   - Click "Add project" or "Create a project"
+   - Enter a project name (e.g., "ACME-Warehouse")
+   - Disable Google Analytics (not needed)
+   - Click "Create project"
+
+2. **Enable Realtime Database**
+   - In your Firebase project, click "Realtime Database" in the left menu
+   - Click "Create Database"
+   - Choose a location closest to you
+   - Start in **"Test mode"** (allows read/write for 30 days)
+   - Click "Enable"
+
+3. **Get Your Firebase Config**
+   - Click the ⚙️ (Settings) icon next to "Project Overview"
+   - Click "Project settings"
+   - Scroll down to "Your apps" section
+   - Click the web icon `</>`
+   - Register your app with a nickname (e.g., "Warehouse Web")
+   - Copy the `firebaseConfig` object
+
+4. **Update firebase-config.js**
+   - Open `firebase-config.js` in your code editor
+   - Replace the placeholder config with your copied config
+   - Make sure to keep the `databaseURL` field!
+   - Save the file
+
+5. **Set Database Rules (Optional - for longer access)**
+   - In Firebase Console, go to "Realtime Database"
+   - Click the "Rules" tab
+   - Replace with these rules for shared access:
+   ```json
+   {
+     "rules": {
+       "garage": {
+         ".read": true,
+         ".write": true
+       }
+     }
+   }
+   ```
+   - Click "Publish"
+
 ## How to Use
 
 1. **Open the Application**
    - Simply open `index.html` in a web browser
    - Works on Chrome, Firefox, Safari, Edge
+   - All users visiting the same deployed site will see the same garage!
 
 2. **Add Vehicles**
    - Click "+ Add Car" or "+ Add Bike"
@@ -73,27 +122,34 @@ A visual digital twin for managing shared vehicle storage in a warehouse with tr
 ## Technical Details
 
 - **No Installation Required**: Pure HTML, CSS, and JavaScript
-- **Local Storage**: All data saved in browser (no server needed)
+- **Firebase Realtime Database**: Shared data across all users
+- **Real-time Sync**: Changes appear instantly for everyone
 - **Responsive Design**: Works on desktop and tablet
 - **Drag-and-Drop**: Intuitive vehicle management
 - **Visual Feedback**: Clear indicators for all actions
+- **Offline Fallback**: Uses localStorage if Firebase is unavailable
 
 ## Storage
 
-All vehicle and parking data is stored locally in your browser's LocalStorage. Data persists between sessions on the same device/browser.
+All vehicle and parking data is stored in **Firebase Realtime Database**, which means:
+- **Everyone sees the same garage in real-time!**
+- Changes made by one person appear instantly for everyone
+- Works across all devices - phone, tablet, laptop
+- No manual syncing needed
 
 ## Sharing with Friends
 
-To share with your friends:
+Once you've set up Firebase and deployed to GitHub Pages:
 
-1. **Option 1 - GitHub Pages (Recommended)**
-   - Each friend can visit the GitHub Pages URL
-   - Everyone has their own separate data
+1. **Share the GitHub Pages URL** with your friends
+   - Example: `https://periperinuggies.github.io/garage-manager/`
+   - Everyone who visits will see the SAME garage
+   - Changes sync in real-time across all devices
 
-2. **Option 2 - Download and Run Locally**
-   - Share the repository
-   - Friends download and open `index.html` in their browser
-   - Each person manages their own garage setup
+2. **Everyone sees the same data**
+   - When anyone adds/moves a vehicle, everyone sees it
+   - Perfect for managing a shared warehouse
+   - No need to tell each other what's where - just check the app!
 
 ## Browser Compatibility
 
@@ -105,10 +161,11 @@ To share with your friends:
 
 ```
 garage-manager/
-├── index.html      # Main HTML structure
-├── styles.css      # All styling and layout
-├── app.js          # Application logic and drag-and-drop
-└── README.md       # This file
+├── index.html         # Main HTML structure
+├── styles.css         # All styling and layout
+├── app.js             # Application logic and drag-and-drop
+├── firebase-config.js # Firebase configuration (update with your credentials)
+└── README.md          # This file
 ```
 
 ## Tips

@@ -8,18 +8,38 @@ class GarageManager {
         this.currentViewingVehicleId = null;
         this.currentVehicleType = 'car';
         this.draggedVehicleType = null; // Track type during drag
+        this.isLocalUpdate = false; // Track if update is from this user
         this.init();
     }
 
     init() {
+        this.dbRef = window.database.ref('garage');
         this.loadData();
         this.setupEventListeners();
-        this.renderVehicles();
         this.setupDragAndDrop();
+        this.setupRealtimeListeners();
     }
 
     // Data Management
     loadData() {
+        // Load data from Firebase
+        this.dbRef.once('value').then((snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                this.vehicles = data.vehicles || [];
+                this.parkingSpots = data.parkingSpots || {};
+                this.bikeOrder = data.bikeOrder || [];
+            }
+            this.renderVehicles();
+        }).catch((error) => {
+            console.error('Error loading data:', error);
+            // Fallback to localStorage if Firebase fails
+            this.loadFromLocalStorage();
+            this.renderVehicles();
+        });
+    }
+
+    loadFromLocalStorage() {
         const savedVehicles = localStorage.getItem('garageVehicles');
         const savedSpots = localStorage.getItem('parkingSpots');
         const savedBikeOrder = localStorage.getItem('bikeOrder');
@@ -38,9 +58,39 @@ class GarageManager {
     }
 
     saveData() {
-        localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
-        localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
-        localStorage.setItem('bikeOrder', JSON.stringify(this.bikeOrder));
+        // Mark this as a local update to prevent re-rendering
+        this.isLocalUpdate = true;
+
+        // Save to Firebase
+        const data = {
+            vehicles: this.vehicles,
+            parkingSpots: this.parkingSpots,
+            bikeOrder: this.bikeOrder,
+            lastUpdated: firebase.database.ServerValue.TIMESTAMP
+        };
+
+        this.dbRef.set(data).catch((error) => {
+            console.error('Error saving data:', error);
+            // Fallback to localStorage if Firebase fails
+            localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
+            localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
+            localStorage.setItem('bikeOrder', JSON.stringify(this.bikeOrder));
+        });
+    }
+
+    setupRealtimeListeners() {
+        // Listen for changes from other users
+        this.dbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && !this.isLocalUpdate) {
+                // Update from another user
+                this.vehicles = data.vehicles || [];
+                this.parkingSpots = data.parkingSpots || {};
+                this.bikeOrder = data.bikeOrder || [];
+                this.renderVehicles();
+            }
+            this.isLocalUpdate = false;
+        });
     }
 
     // Event Listeners
@@ -651,6 +701,15 @@ class GarageManager {
         document.querySelectorAll('.vehicle-pool').forEach(pool => {
             pool.classList.remove('drag-over');
         });
+
+        // Check if trying to drop into an occupied spot
+        if (e.currentTarget.classList.contains('parking-spot')) {
+            const position = e.currentTarget.dataset.position;
+            // If spot is already occupied by a different vehicle, don't allow the drop
+            if (this.parkingSpots[position] && this.parkingSpots[position] !== vehicleId) {
+                return;
+            }
+        }
 
         // Remove vehicle from previous spot
         Object.keys(this.parkingSpots).forEach(spot => {
