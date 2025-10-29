@@ -698,6 +698,12 @@ class GarageManager {
             e.currentTarget.classList.remove('drag-over');
         } else if (e.currentTarget.classList.contains('vehicle-pool')) {
             e.currentTarget.classList.remove('drag-over');
+        } else if (e.currentTarget.id === 'bikeStorage') {
+            e.currentTarget.classList.remove('drag-over');
+            // Also clear any bike card indicators
+            document.querySelectorAll('.bike-card').forEach(card => {
+                card.classList.remove('drag-over-top', 'drag-over-bottom');
+            });
         }
     }
 
@@ -762,11 +768,15 @@ class GarageManager {
 
         // Check if this is the available bikes pool
         const isAvailablePool = e.currentTarget.id === 'availableBikesList';
+        const isBikeStorage = e.currentTarget.id === 'bikeStorage';
 
         if (isAvailablePool) {
             // For available pool, highlight the whole pool
             e.currentTarget.classList.add('drag-over');
-        } else {
+        } else if (isBikeStorage) {
+            // Always highlight the storage container when dragging over it
+            e.currentTarget.classList.add('drag-over');
+
             // Clear all previous indicators
             document.querySelectorAll('.bike-card').forEach(card => {
                 card.classList.remove('drag-over-top', 'drag-over-bottom');
@@ -779,10 +789,8 @@ class GarageManager {
                 insertionInfo.element.classList.add('drag-over-top');
             } else if (insertionInfo.position === 'after' && insertionInfo.element) {
                 insertionInfo.element.classList.add('drag-over-bottom');
-            } else if (insertionInfo.position === 'empty') {
-                // Empty storage, show drop zone
-                e.currentTarget.classList.add('drag-over');
             }
+            // If empty, drag-over class is already on the container
         }
     }
 
@@ -793,7 +801,12 @@ class GarageManager {
         const vehicleId = e.dataTransfer.getData('vehicleId');
         const vehicleType = e.dataTransfer.getData('vehicleType');
 
-        if (!vehicleId || vehicleType !== 'bike') return;
+        console.log('Bike drop:', vehicleId, 'Type:', vehicleType);
+
+        if (!vehicleId || vehicleType !== 'bike') {
+            console.log('Invalid bike drop - returning');
+            return;
+        }
 
         // Remove drag-over class
         document.querySelectorAll('.bike-card').forEach(card => {
@@ -808,28 +821,35 @@ class GarageManager {
 
         // Check if dropping into available bikes pool or bike storage
         const isAvailablePool = e.currentTarget.id === 'availableBikesList';
+        console.log('Is available pool?', isAvailablePool);
+        console.log('Current bikeOrder before:', [...this.bikeOrder]);
 
         // Remove bike from current position in bikeOrder
         const currentIndex = this.bikeOrder.indexOf(vehicleId);
         if (currentIndex > -1) {
             this.bikeOrder.splice(currentIndex, 1);
+            console.log('Removed bike from position', currentIndex);
         }
 
         // If dropping into bike storage (not available pool), insert at new position
         if (!isAvailablePool) {
             const insertionInfo = this.getBikeInsertionPoint(e.currentTarget, e.clientY);
+            console.log('Insertion info:', insertionInfo);
 
             if (insertionInfo.position === 'empty') {
                 // Empty storage, add as first bike
                 this.bikeOrder.push(vehicleId);
+                console.log('Added to empty storage');
             } else if (insertionInfo.position === 'before' && insertionInfo.element) {
                 // Insert before the element
                 const targetId = insertionInfo.element.dataset.vehicleId;
                 const targetIndex = this.bikeOrder.indexOf(targetId);
                 if (targetIndex !== -1) {
                     this.bikeOrder.splice(targetIndex, 0, vehicleId);
+                    console.log('Inserted before position', targetIndex);
                 } else {
                     this.bikeOrder.unshift(vehicleId);
+                    console.log('Added to start');
                 }
             } else if (insertionInfo.position === 'after' && insertionInfo.element) {
                 // Insert after the element
@@ -837,13 +857,16 @@ class GarageManager {
                 const targetIndex = this.bikeOrder.indexOf(targetId);
                 if (targetIndex !== -1) {
                     this.bikeOrder.splice(targetIndex + 1, 0, vehicleId);
+                    console.log('Inserted after position', targetIndex);
                 } else {
                     this.bikeOrder.push(vehicleId);
+                    console.log('Added to end');
                 }
             }
         }
         // If dropping into available pool, just leave it out of bikeOrder
 
+        console.log('Final bikeOrder:', [...this.bikeOrder]);
         this.saveData();
         this.renderVehicles();
         this.setupDragListeners();
