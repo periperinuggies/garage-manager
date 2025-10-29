@@ -712,10 +712,16 @@ class GarageManager {
         let draggedVehicleType = null;
         let touchStartX = 0;
         let touchStartY = 0;
+        let isDragging = false; // Track if actually dragging
+        let hasMoved = false; // Track if finger has moved
+        const DRAG_THRESHOLD = 10; // Pixels to move before starting drag
+
+        console.log('TOUCH: Setting up touch support');
 
         document.addEventListener('touchstart', (e) => {
             const card = e.target.closest('.vehicle-card');
             if (card) {
+                console.log('TOUCH: Touch start on vehicle card');
                 draggedElement = card;
                 draggedVehicleId = card.dataset.vehicleId;
                 draggedVehicleType = card.dataset.vehicleType;
@@ -725,33 +731,71 @@ class GarageManager {
                 touchStartX = touch.clientX;
                 touchStartY = touch.clientY;
 
-                card.classList.add('dragging');
-                card.style.opacity = '0.5';
+                isDragging = false;
+                hasMoved = false;
+
+                // Don't add visual feedback yet - wait for movement
             }
-        });
+        }, { passive: true });
 
         document.addEventListener('touchmove', (e) => {
             if (!draggedElement) return;
-            e.preventDefault();
 
             const touch = e.touches[0];
-            const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+            const deltaX = Math.abs(touch.clientX - touchStartX);
+            const deltaY = Math.abs(touch.clientY - touchStartY);
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
 
-            // Clear previous highlights
-            document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+            hasMoved = true;
 
-            // Highlight drop target
-            if (elementBelow) {
-                const dropTarget = elementBelow.closest('.parking-spot, .bike-slot, .vehicle-pool');
-                if (dropTarget) {
-                    dropTarget.classList.add('drag-over');
+            // Only start dragging if moved beyond threshold
+            if (!isDragging && distance > DRAG_THRESHOLD) {
+                console.log('TOUCH: Drag threshold reached, starting drag');
+                isDragging = true;
+                draggedElement.classList.add('dragging');
+                draggedElement.style.opacity = '0.5';
+                e.preventDefault(); // Prevent scrolling only when dragging
+            }
+
+            // Only show drag feedback if actually dragging
+            if (isDragging) {
+                e.preventDefault(); // Prevent scrolling during drag
+
+                const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                // Clear previous highlights
+                document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+
+                // Highlight drop target
+                if (elementBelow) {
+                    const dropTarget = elementBelow.closest('.parking-spot, .bike-slot, .vehicle-pool');
+                    if (dropTarget) {
+                        dropTarget.classList.add('drag-over');
+                    }
                 }
             }
-        });
+        }, { passive: false }); // Need non-passive to prevent default
 
         document.addEventListener('touchend', (e) => {
             if (!draggedElement) return;
 
+            console.log('TOUCH: Touch end - isDragging:', isDragging, 'hasMoved:', hasMoved);
+
+            // If it's a tap (no movement or minimal movement), allow click to happen
+            if (!isDragging || !hasMoved) {
+                console.log('TOUCH: Detected tap, allowing click event');
+                // Clean up and let the click event handle it
+                draggedElement = null;
+                draggedVehicleId = null;
+                draggedVehicleType = null;
+                isDragging = false;
+                hasMoved = false;
+                this.draggedVehicleType = null;
+                return;
+            }
+
+            // Handle actual drag-and-drop
+            console.log('TOUCH: Processing drag-and-drop');
             const touch = e.changedTouches[0];
             const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
 
@@ -766,9 +810,13 @@ class GarageManager {
                 const parkingSpot = elementBelow.closest('.parking-spot[data-vehicle-type="car"]');
                 if (parkingSpot && draggedVehicleType === 'car') {
                     const position = parkingSpot.dataset.position;
+                    console.log('TOUCH: Dropping car at position', position);
                     // Check if occupied
                     if (this.parkingSpots[position] && this.parkingSpots[position] !== draggedVehicleId) {
+                        console.log('TOUCH: Position occupied, canceling');
                         draggedElement = null;
+                        isDragging = false;
+                        hasMoved = false;
                         return;
                     }
                     // Remove from previous spot
@@ -789,9 +837,13 @@ class GarageManager {
                 const bikeSlot = elementBelow.closest('.bike-slot');
                 if (bikeSlot && draggedVehicleType === 'bike') {
                     const slotNumber = bikeSlot.dataset.slotNumber;
+                    console.log('TOUCH: Dropping bike at slot', slotNumber);
                     // Check if occupied
                     if (this.bikeSlots[slotNumber] && this.bikeSlots[slotNumber] !== draggedVehicleId) {
+                        console.log('TOUCH: Slot occupied, canceling');
                         draggedElement = null;
+                        isDragging = false;
+                        hasMoved = false;
                         return;
                     }
                     // Remove from previous slot
@@ -813,6 +865,7 @@ class GarageManager {
                 const availableBikesList = elementBelow.closest('#availableBikesList');
 
                 if (availableCarsList && draggedVehicleType === 'car') {
+                    console.log('TOUCH: Unparking car');
                     // Unpark car
                     Object.keys(this.parkingSpots).forEach(spot => {
                         if (this.parkingSpots[spot] === draggedVehicleId) {
@@ -826,6 +879,7 @@ class GarageManager {
                 }
 
                 if (availableBikesList && draggedVehicleType === 'bike') {
+                    console.log('TOUCH: Unparking bike');
                     // Unpark bike
                     Object.keys(this.bikeSlots).forEach(slot => {
                         if (this.bikeSlots[slot] === draggedVehicleId) {
@@ -842,10 +896,13 @@ class GarageManager {
             draggedElement = null;
             draggedVehicleId = null;
             draggedVehicleType = null;
+            isDragging = false;
+            hasMoved = false;
             this.draggedVehicleType = null;
-        });
+        }, { passive: true });
 
         document.addEventListener('touchcancel', () => {
+            console.log('TOUCH: Touch canceled');
             if (draggedElement) {
                 draggedElement.classList.remove('dragging');
                 draggedElement.style.opacity = '';
@@ -854,8 +911,10 @@ class GarageManager {
             draggedElement = null;
             draggedVehicleId = null;
             draggedVehicleType = null;
+            isDragging = false;
+            hasMoved = false;
             this.draggedVehicleType = null;
-        });
+        }, { passive: true });
     }
 
     setupDragListeners() {
