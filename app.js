@@ -3,7 +3,7 @@ class GarageManager {
     constructor() {
         this.vehicles = [];
         this.parkingSpots = {};
-        this.bikeOrder = []; // Track bike order in bike storage
+        this.bikeSlots = {}; // Map slot numbers to bike IDs {1: 'bike_123', 5: 'bike_456'}
         this.currentEditingVehicleId = null;
         this.currentViewingVehicleId = null;
         this.currentVehicleType = 'car';
@@ -15,12 +15,27 @@ class GarageManager {
     init() {
         this.dbRef = window.database.ref('garage');
         this.isFirstLoad = true;
+        this.createBikeSlots();
         this.loadData();
         this.setupEventListeners();
         this.setupDragAndDrop();
         this.setupRealtimeListeners();
         this.updatePerthInfo();
         this.startPerthClock();
+    }
+
+    createBikeSlots() {
+        const bikeStorage = document.getElementById('bikeStorage');
+        bikeStorage.innerHTML = '';
+
+        // Create 50 bike slots
+        for (let i = 1; i <= 50; i++) {
+            const slot = document.createElement('div');
+            slot.className = 'bike-slot';
+            slot.dataset.slotNumber = i;
+            slot.dataset.vehicleType = 'bike';
+            bikeStorage.appendChild(slot);
+        }
     }
 
     // Data Management
@@ -31,7 +46,16 @@ class GarageManager {
             if (data) {
                 this.vehicles = data.vehicles || [];
                 this.parkingSpots = data.parkingSpots || {};
-                this.bikeOrder = data.bikeOrder || [];
+                // Migrate old bikeOrder to bikeSlots if needed
+                if (data.bikeSlots) {
+                    this.bikeSlots = data.bikeSlots;
+                } else if (data.bikeOrder) {
+                    // Migrate old array format to new slot format
+                    this.bikeSlots = {};
+                    data.bikeOrder.forEach((bikeId, index) => {
+                        this.bikeSlots[index + 1] = bikeId;
+                    });
+                }
             }
             this.renderVehicles();
         }).catch((error) => {
@@ -45,7 +69,7 @@ class GarageManager {
     loadFromLocalStorage() {
         const savedVehicles = localStorage.getItem('garageVehicles');
         const savedSpots = localStorage.getItem('parkingSpots');
-        const savedBikeOrder = localStorage.getItem('bikeOrder');
+        const savedBikeSlots = localStorage.getItem('bikeSlots');
 
         if (savedVehicles) {
             this.vehicles = JSON.parse(savedVehicles);
@@ -55,8 +79,8 @@ class GarageManager {
             this.parkingSpots = JSON.parse(savedSpots);
         }
 
-        if (savedBikeOrder) {
-            this.bikeOrder = JSON.parse(savedBikeOrder);
+        if (savedBikeSlots) {
+            this.bikeSlots = JSON.parse(savedBikeSlots);
         }
     }
 
@@ -65,7 +89,7 @@ class GarageManager {
         const data = {
             vehicles: this.vehicles,
             parkingSpots: this.parkingSpots,
-            bikeOrder: this.bikeOrder,
+            bikeSlots: this.bikeSlots,
             lastUpdated: firebase.database.ServerValue.TIMESTAMP
         };
 
@@ -76,14 +100,14 @@ class GarageManager {
             // Success - also save to localStorage as backup
             localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
             localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
-            localStorage.setItem('bikeOrder', JSON.stringify(this.bikeOrder));
+            localStorage.setItem('bikeSlots', JSON.stringify(this.bikeSlots));
         }).catch((error) => {
             console.error('Error saving data:', error);
             this.isLocalUpdate = false; // Reset flag on error
             // Fallback to localStorage if Firebase fails
             localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
             localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
-            localStorage.setItem('bikeOrder', JSON.stringify(this.bikeOrder));
+            localStorage.setItem('bikeSlots', JSON.stringify(this.bikeSlots));
         });
     }
 
@@ -108,7 +132,7 @@ class GarageManager {
             if (data) {
                 this.vehicles = data.vehicles || [];
                 this.parkingSpots = data.parkingSpots || {};
-                this.bikeOrder = data.bikeOrder || [];
+                this.bikeSlots = data.bikeSlots || {};
                 this.renderVehicles();
             }
         });
@@ -463,15 +487,20 @@ class GarageManager {
             spot.classList.remove('occupied');
         });
 
-        // Clear bike storage
-        const bikeStorage = document.getElementById('bikeStorage');
-        bikeStorage.innerHTML = '';
-
         // Clear available vehicle pools
         const availableCarsList = document.getElementById('availableCarsList');
         const availableBikesList = document.getElementById('availableBikesList');
         availableCarsList.innerHTML = '';
         availableBikesList.innerHTML = '';
+
+        // Clear all bike slots (but keep the slot divs)
+        document.querySelectorAll('.bike-slot').forEach(slot => {
+            const bikeCard = slot.querySelector('.bike-card');
+            if (bikeCard) {
+                bikeCard.remove();
+            }
+            slot.classList.remove('occupied');
+        });
 
         // Separate cars and bikes
         const cars = this.vehicles.filter(v => v.vehicleType === 'car');
@@ -498,20 +527,30 @@ class GarageManager {
             this.renderVehicleCard(vehicle, availableCarsList);
         });
 
-        // Update bike order to remove deleted bikes
+        // Clean up bikeSlots - remove bikes that no longer exist
         const bikeIds = bikes.map(b => b.id);
-        this.bikeOrder = this.bikeOrder.filter(id => bikeIds.includes(id));
-
-        // Render bikes that are in storage (in bikeOrder)
-        this.bikeOrder.forEach(bikeId => {
-            const bike = bikes.find(b => b.id === bikeId);
-            if (bike) {
-                this.renderBikeCard(bike, bikeStorage);
+        Object.keys(this.bikeSlots).forEach(slotNum => {
+            if (!bikeIds.includes(this.bikeSlots[slotNum])) {
+                delete this.bikeSlots[slotNum];
             }
         });
 
-        // Show bikes that are NOT in storage in the available bikes pool
-        const availableBikes = bikes.filter(b => !this.bikeOrder.includes(b.id));
+        // Place bikes in their slots
+        Object.keys(this.bikeSlots).forEach(slotNumber => {
+            const bikeId = this.bikeSlots[slotNumber];
+            const bike = bikes.find(b => b.id === bikeId);
+            if (bike) {
+                const slot = document.querySelector(`.bike-slot[data-slot-number="${slotNumber}"]`);
+                if (slot) {
+                    this.renderBikeCard(bike, slot);
+                    slot.classList.add('occupied');
+                }
+            }
+        });
+
+        // Show bikes that are NOT in any slot in the available bikes pool
+        const storedBikeIds = Object.values(this.bikeSlots);
+        const availableBikes = bikes.filter(b => !storedBikeIds.includes(b.id));
         availableBikes.forEach(bike => {
             this.renderBikeCard(bike, availableBikesList);
         });
@@ -631,19 +670,18 @@ class GarageManager {
             availableCarsList.addEventListener('dragleave', this.handleDragLeave.bind(this));
         }
 
-        // Add to bike storage area
-        const bikeStorage = document.getElementById('bikeStorage');
-        if (bikeStorage) {
-            bikeStorage.addEventListener('dragover', this.handleBikeDragOver.bind(this));
-            bikeStorage.addEventListener('drop', this.handleBikeDrop.bind(this));
-            bikeStorage.addEventListener('dragleave', this.handleDragLeave.bind(this));
-        }
+        // Add to all bike slots
+        document.querySelectorAll('.bike-slot').forEach(slot => {
+            slot.addEventListener('dragover', this.handleBikeSlotDragOver.bind(this));
+            slot.addEventListener('drop', this.handleBikeSlotDrop.bind(this));
+            slot.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        });
 
         // Add to available bikes pool
         const availableBikesList = document.getElementById('availableBikesList');
         if (availableBikesList) {
             availableBikesList.addEventListener('dragover', this.handleBikeDragOver.bind(this));
-            availableBikesList.addEventListener('drop', this.handleBikeDrop.bind(this));
+            availableBikesList.addEventListener('drop', this.handleAvailableBikesDrop.bind(this));
             availableBikesList.addEventListener('dragleave', this.handleDragLeave.bind(this));
         }
 
@@ -698,12 +736,8 @@ class GarageManager {
             e.currentTarget.classList.remove('drag-over');
         } else if (e.currentTarget.classList.contains('vehicle-pool')) {
             e.currentTarget.classList.remove('drag-over');
-        } else if (e.currentTarget.id === 'bikeStorage') {
+        } else if (e.currentTarget.classList.contains('bike-slot')) {
             e.currentTarget.classList.remove('drag-over');
-            // Also clear any bike card indicators
-            document.querySelectorAll('.bike-card').forEach(card => {
-                card.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
         }
     }
 
@@ -757,163 +791,89 @@ class GarageManager {
         this.setupDragListeners(); // Re-attach listeners to new elements
     }
 
-    handleBikeDragOver(e) {
-        // Only allow bikes in bike storage
+    // Bike slot drag over handler
+    handleBikeSlotDragOver(e) {
         if (this.draggedVehicleType !== 'bike') {
             return;
         }
 
         e.preventDefault();
         e.dataTransfer.dropEffect = 'move';
-
-        // Check if this is the available bikes pool
-        const isAvailablePool = e.currentTarget.id === 'availableBikesList';
-        const isBikeStorage = e.currentTarget.id === 'bikeStorage';
-
-        if (isAvailablePool) {
-            // For available pool, highlight the whole pool
-            e.currentTarget.classList.add('drag-over');
-        } else if (isBikeStorage) {
-            // Always highlight the storage container when dragging over it
-            e.currentTarget.classList.add('drag-over');
-
-            // Clear all previous indicators
-            document.querySelectorAll('.bike-card').forEach(card => {
-                card.classList.remove('drag-over-top', 'drag-over-bottom');
-            });
-
-            // For bike storage, show insertion point
-            const insertionInfo = this.getBikeInsertionPoint(e.currentTarget, e.clientY);
-
-            if (insertionInfo.position === 'before' && insertionInfo.element) {
-                insertionInfo.element.classList.add('drag-over-top');
-            } else if (insertionInfo.position === 'after' && insertionInfo.element) {
-                insertionInfo.element.classList.add('drag-over-bottom');
-            }
-            // If empty, drag-over class is already on the container
-        }
+        e.currentTarget.classList.add('drag-over');
     }
 
-    handleBikeDrop(e) {
+    // Available bikes pool drag over
+    handleBikeDragOver(e) {
+        if (this.draggedVehicleType !== 'bike') {
+            return;
+        }
+
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    // Drop bike into a slot
+    handleBikeSlotDrop(e) {
         e.preventDefault();
         e.stopPropagation();
 
         const vehicleId = e.dataTransfer.getData('vehicleId');
         const vehicleType = e.dataTransfer.getData('vehicleType');
 
-        console.log('Bike drop:', vehicleId, 'Type:', vehicleType);
+        if (!vehicleId || vehicleType !== 'bike') return;
 
-        if (!vehicleId || vehicleType !== 'bike') {
-            console.log('Invalid bike drop - returning');
+        // Remove drag-over class
+        document.querySelectorAll('.bike-slot').forEach(slot => {
+            slot.classList.remove('drag-over');
+        });
+
+        const slotNumber = e.currentTarget.dataset.slotNumber;
+
+        // Check if slot is already occupied by a different bike
+        if (this.bikeSlots[slotNumber] && this.bikeSlots[slotNumber] !== vehicleId) {
+            // Slot occupied, don't allow drop
             return;
         }
 
-        // Remove drag-over class
-        document.querySelectorAll('.bike-card').forEach(card => {
-            card.classList.remove('drag-over-top', 'drag-over-bottom');
-        });
-        document.querySelectorAll('.vehicle-pool').forEach(pool => {
-            pool.classList.remove('drag-over');
-        });
-        document.querySelectorAll('#bikeStorage').forEach(storage => {
-            storage.classList.remove('drag-over');
-        });
-
-        // Check if dropping into available bikes pool or bike storage
-        const isAvailablePool = e.currentTarget.id === 'availableBikesList';
-        console.log('Is available pool?', isAvailablePool);
-        console.log('Current bikeOrder before:', [...this.bikeOrder]);
-
-        // Remove bike from current position in bikeOrder
-        const currentIndex = this.bikeOrder.indexOf(vehicleId);
-        if (currentIndex > -1) {
-            this.bikeOrder.splice(currentIndex, 1);
-            console.log('Removed bike from position', currentIndex);
-        }
-
-        // If dropping into bike storage (not available pool), insert at new position
-        if (!isAvailablePool) {
-            const insertionInfo = this.getBikeInsertionPoint(e.currentTarget, e.clientY);
-            console.log('Insertion info:', insertionInfo);
-
-            if (insertionInfo.position === 'empty') {
-                // Empty storage, add as first bike
-                this.bikeOrder.push(vehicleId);
-                console.log('Added to empty storage');
-            } else if (insertionInfo.position === 'before' && insertionInfo.element) {
-                // Insert before the element
-                const targetId = insertionInfo.element.dataset.vehicleId;
-                const targetIndex = this.bikeOrder.indexOf(targetId);
-                if (targetIndex !== -1) {
-                    this.bikeOrder.splice(targetIndex, 0, vehicleId);
-                    console.log('Inserted before position', targetIndex);
-                } else {
-                    this.bikeOrder.unshift(vehicleId);
-                    console.log('Added to start');
-                }
-            } else if (insertionInfo.position === 'after' && insertionInfo.element) {
-                // Insert after the element
-                const targetId = insertionInfo.element.dataset.vehicleId;
-                const targetIndex = this.bikeOrder.indexOf(targetId);
-                if (targetIndex !== -1) {
-                    this.bikeOrder.splice(targetIndex + 1, 0, vehicleId);
-                    console.log('Inserted after position', targetIndex);
-                } else {
-                    this.bikeOrder.push(vehicleId);
-                    console.log('Added to end');
-                }
+        // Remove bike from its current slot
+        Object.keys(this.bikeSlots).forEach(slot => {
+            if (this.bikeSlots[slot] === vehicleId) {
+                delete this.bikeSlots[slot];
             }
-        }
-        // If dropping into available pool, just leave it out of bikeOrder
+        });
 
-        console.log('Final bikeOrder:', [...this.bikeOrder]);
+        // Add bike to new slot
+        this.bikeSlots[slotNumber] = vehicleId;
+
         this.saveData();
         this.renderVehicles();
         this.setupDragListeners();
     }
 
-    getBikeInsertionPoint(container, y) {
-        const draggableElements = [...container.querySelectorAll('.bike-card:not(.dragging)')];
+    // Drop bike into available bikes pool (unpark)
+    handleAvailableBikesDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
 
-        // If no bikes in storage
-        if (draggableElements.length === 0) {
-            return { position: 'empty', element: null };
-        }
+        const vehicleId = e.dataTransfer.getData('vehicleId');
+        const vehicleType = e.dataTransfer.getData('vehicleType');
 
-        // Find the closest element and whether to insert before or after
-        for (let i = 0; i < draggableElements.length; i++) {
-            const element = draggableElements[i];
-            const box = element.getBoundingClientRect();
-            const middle = box.top + box.height / 2;
+        if (!vehicleId || vehicleType !== 'bike') return;
 
-            // If hovering over top half of first element
-            if (i === 0 && y < middle) {
-                return { position: 'before', element: element };
+        // Remove drag-over class
+        e.currentTarget.classList.remove('drag-over');
+
+        // Remove bike from its current slot
+        Object.keys(this.bikeSlots).forEach(slot => {
+            if (this.bikeSlots[slot] === vehicleId) {
+                delete this.bikeSlots[slot];
             }
+        });
 
-            // If hovering over bottom half of last element
-            if (i === draggableElements.length - 1 && y > middle) {
-                return { position: 'after', element: element };
-            }
-
-            // If hovering over bottom half of current or top half of next
-            if (y > middle) {
-                if (i < draggableElements.length - 1) {
-                    const nextElement = draggableElements[i + 1];
-                    const nextBox = nextElement.getBoundingClientRect();
-                    const nextMiddle = nextBox.top + nextBox.height / 2;
-
-                    if (y < nextMiddle) {
-                        return { position: 'after', element: element };
-                    }
-                }
-            } else {
-                return { position: 'before', element: element };
-            }
-        }
-
-        // Default to after last element
-        return { position: 'after', element: draggableElements[draggableElements.length - 1] };
+        this.saveData();
+        this.renderVehicles();
+        this.setupDragListeners();
     }
 
     // Utility
