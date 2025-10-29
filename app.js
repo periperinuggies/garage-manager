@@ -14,6 +14,7 @@ class GarageManager {
 
     init() {
         this.dbRef = window.database.ref('garage');
+        this.isFirstLoad = true;
         this.loadData();
         this.setupEventListeners();
         this.setupDragAndDrop();
@@ -60,9 +61,6 @@ class GarageManager {
     }
 
     saveData() {
-        // Mark this as a local update to prevent re-rendering
-        this.isLocalUpdate = true;
-
         // Save to Firebase
         const data = {
             vehicles: this.vehicles,
@@ -71,8 +69,17 @@ class GarageManager {
             lastUpdated: firebase.database.ServerValue.TIMESTAMP
         };
 
-        this.dbRef.set(data).catch((error) => {
+        // Mark this as a local update BEFORE writing to prevent listener from re-rendering
+        this.isLocalUpdate = true;
+
+        this.dbRef.set(data).then(() => {
+            // Success - also save to localStorage as backup
+            localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
+            localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
+            localStorage.setItem('bikeOrder', JSON.stringify(this.bikeOrder));
+        }).catch((error) => {
             console.error('Error saving data:', error);
+            this.isLocalUpdate = false; // Reset flag on error
             // Fallback to localStorage if Firebase fails
             localStorage.setItem('garageVehicles', JSON.stringify(this.vehicles));
             localStorage.setItem('parkingSpots', JSON.stringify(this.parkingSpots));
@@ -83,15 +90,27 @@ class GarageManager {
     setupRealtimeListeners() {
         // Listen for changes from other users
         this.dbRef.on('value', (snapshot) => {
+            // Skip the first load (handled by loadData)
+            if (this.isFirstLoad) {
+                this.isFirstLoad = false;
+                return;
+            }
+
             const data = snapshot.val();
-            if (data && !this.isLocalUpdate) {
-                // Update from another user
+
+            // Skip if this is our own update
+            if (this.isLocalUpdate) {
+                this.isLocalUpdate = false;
+                return;
+            }
+
+            // Update from another user or browser tab
+            if (data) {
                 this.vehicles = data.vehicles || [];
                 this.parkingSpots = data.parkingSpots || {};
                 this.bikeOrder = data.bikeOrder || [];
                 this.renderVehicles();
             }
-            this.isLocalUpdate = false;
         });
     }
 
