@@ -18,6 +18,8 @@ class GarageManager {
         this.setupEventListeners();
         this.setupDragAndDrop();
         this.setupRealtimeListeners();
+        this.updatePerthInfo();
+        this.startPerthClock();
     }
 
     // Data Management
@@ -937,6 +939,121 @@ class GarageManager {
             vehicle.isCharging = isCharging;
             this.saveData();
         }
+    }
+
+    // Perth Time and Weather
+    updatePerthInfo() {
+        this.updatePerthTime();
+        this.updatePerthWeather();
+        // Update weather every 10 minutes
+        setInterval(() => this.updatePerthWeather(), 600000);
+    }
+
+    startPerthClock() {
+        // Update time every second
+        setInterval(() => this.updatePerthTime(), 1000);
+    }
+
+    updatePerthTime() {
+        const perthTimeElement = document.getElementById('perthTime');
+        if (!perthTimeElement) return;
+
+        // Perth is AWST (UTC+8)
+        const now = new Date();
+        const perthTime = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Perth' }));
+
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        };
+
+        const timeString = perthTime.toLocaleString('en-US', options);
+        perthTimeElement.textContent = `📍 Perth, WA • ${timeString}`;
+    }
+
+    updatePerthWeather() {
+        const weatherElement = document.getElementById('perthWeather');
+        if (!weatherElement) return;
+
+        // Use wttr.in free weather API (no key needed)
+        fetch('https://wttr.in/Perth,Australia?format=j1')
+            .then(response => response.json())
+            .then(data => {
+                const current = data.current_condition[0];
+                const temp = current.temp_C;
+                const desc = current.weatherDesc[0].value;
+
+                // Get weather emoji based on weather code
+                const weatherEmoji = this.getWeatherEmoji(current.weatherCode);
+
+                weatherElement.textContent = `${weatherEmoji} ${temp}°C • ${desc}`;
+            })
+            .catch(error => {
+                console.error('Weather fetch error:', error);
+                weatherElement.textContent = '☁️ Weather unavailable';
+            });
+    }
+
+    getWeatherEmoji(code) {
+        // Weather code to emoji mapping
+        const weatherCodes = {
+            '113': '☀️',  // Sunny
+            '116': '⛅',  // Partly cloudy
+            '119': '☁️',  // Cloudy
+            '122': '☁️',  // Overcast
+            '143': '🌫️', // Mist
+            '176': '🌦️', // Patchy rain possible
+            '179': '🌨️', // Patchy snow possible
+            '182': '🌨️', // Patchy sleet possible
+            '185': '🌨️', // Patchy freezing drizzle
+            '200': '⛈️', // Thundery outbreaks possible
+            '227': '🌨️', // Blowing snow
+            '230': '❄️',  // Blizzard
+            '248': '🌫️', // Fog
+            '260': '🌫️', // Freezing fog
+            '263': '🌦️', // Patchy light drizzle
+            '266': '🌧️', // Light drizzle
+            '281': '🌧️', // Freezing drizzle
+            '284': '🌧️', // Heavy freezing drizzle
+            '293': '🌦️', // Patchy light rain
+            '296': '🌧️', // Light rain
+            '299': '🌧️', // Moderate rain at times
+            '302': '🌧️', // Moderate rain
+            '305': '🌧️', // Heavy rain at times
+            '308': '🌧️', // Heavy rain
+            '311': '🌧️', // Light freezing rain
+            '314': '🌧️', // Moderate or heavy freezing rain
+            '317': '🌨️', // Light sleet
+            '320': '🌨️', // Moderate or heavy sleet
+            '323': '🌨️', // Patchy light snow
+            '326': '❄️',  // Light snow
+            '329': '🌨️', // Patchy moderate snow
+            '332': '❄️',  // Moderate snow
+            '335': '🌨️', // Patchy heavy snow
+            '338': '❄️',  // Heavy snow
+            '350': '🌨️', // Ice pellets
+            '353': '🌦️', // Light rain shower
+            '356': '🌧️', // Moderate or heavy rain shower
+            '359': '🌧️', // Torrential rain shower
+            '362': '🌨️', // Light sleet showers
+            '365': '🌨️', // Moderate or heavy sleet showers
+            '368': '🌨️', // Light snow showers
+            '371': '❄️',  // Moderate or heavy snow showers
+            '374': '🌨️', // Light showers of ice pellets
+            '377': '🌨️', // Moderate or heavy showers of ice pellets
+            '386': '⛈️', // Patchy light rain with thunder
+            '389': '⛈️', // Moderate or heavy rain with thunder
+            '392': '⛈️', // Patchy light snow with thunder
+            '395': '⛈️'  // Moderate or heavy snow with thunder
+        };
+
+        return weatherCodes[code] || '🌡️';
     }
 }
 

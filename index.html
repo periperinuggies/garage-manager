@@ -9,7 +9,13 @@
 <body>
     <div class="container">
         <header>
-            <h1>🏎️ ACME Warehouse Manager</h1>
+            <div class="header-top">
+                <h1>🏎️ ACME Warehouse Manager</h1>
+                <div id="locationInfo" class="location-info">
+                    <div id="perthTime" class="perth-time">Loading...</div>
+                    <div id="perthWeather" class="perth-weather">Loading weather...</div>
+                </div>
+            </div>
             <div class="header-buttons">
                 <button id="addCarBtn" class="btn-primary">+ Add Car</button>
                 <button id="addBikeBtn" class="btn-primary">+ Add Bike</button>
@@ -153,16 +159,16 @@
                             <input type="number" id="zeroToHundred" step="0.1" placeholder="e.g., 3.5">
                         </div>
                         <div class="form-group">
-                            <label for="curbWeight">Curb Weight (kg)</label>
-                            <input type="number" id="curbWeight" placeholder="e.g., 1580">
-                        </div>
-                        <div class="form-group">
                             <label for="tirePressureFront">Tire Pressure Front (PSI)</label>
                             <input type="number" id="tirePressureFront" step="0.1" placeholder="e.g., 32">
                         </div>
                         <div class="form-group">
                             <label for="tirePressureRear">Tire Pressure Rear (PSI)</label>
                             <input type="number" id="tirePressureRear" step="0.1" placeholder="e.g., 32">
+                        </div>
+                        <div class="form-group">
+                            <label for="curbWeight">Curb Weight (kg)</label>
+                            <input type="number" id="curbWeight" placeholder="e.g., 1580">
                         </div>
                         <div class="form-group full-width">
                             <label for="storageNotes">Storage Notes</label>
