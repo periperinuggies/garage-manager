@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garage Manager - Digital Twin</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏎️ ACME Warehouse Manager</h1>
+            <div class="header-buttons">
+                <button id="addCarBtn" class="btn-primary">+ Add Car</button>
+                <button id="addBikeBtn" class="btn-primary">+ Add Bike</button>
+            </div>
+        </header>
+
+        <div class="garage-layout">
+            <!-- Working Lift (Left Side) -->
+            <div class="lift-section">
+                <h3>Working Lift</h3>
+                <div class="parking-spot lift" data-position="lift-1" data-type="lift" data-vehicle-type="car">
+                    <span class="spot-label">Lift Bay</span>
+                </div>
+            </div>
+
+            <!-- Main Garage Area -->
+            <div class="main-garage">
+                <!-- Triple Stackers -->
+                <div class="stackers-section">
+                    <div class="stacker-column">
+                        <div class="stacker">
+                            <h3>Stacker A</h3>
+                            <div class="parking-spot car-bay" data-position="stacker-a-top" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Top (3rd)</span>
+                            </div>
+                            <div class="parking-spot car-bay" data-position="stacker-a-middle" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Middle (2nd)</span>
+                            </div>
+                            <div class="parking-spot car-bay" data-position="stacker-a-bottom" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Bottom (1st)</span>
+                            </div>
+                        </div>
+                        <div class="floor-bays">
+                            <h3>Floor</h3>
+                            <div class="parking-spot car-bay" data-position="floor-1" data-type="floor" data-vehicle-type="car">
+                                <span class="spot-label">Front</span>
+                            </div>
+                            <div class="parking-spot car-bay" data-position="floor-2" data-type="floor" data-vehicle-type="car">
+                                <span class="spot-label">Rear</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stacker-column">
+                        <div class="stacker">
+                            <h3>Stacker B</h3>
+                            <div class="parking-spot car-bay" data-position="stacker-b-top" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Top (3rd)</span>
+                            </div>
+                            <div class="parking-spot car-bay" data-position="stacker-b-middle" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Middle (2nd)</span>
+                            </div>
+                            <div class="parking-spot car-bay" data-position="stacker-b-bottom" data-type="stacker" data-vehicle-type="car">
+                                <span class="spot-label">Bottom (1st)</span>
+                            </div>
+                        </div>
+                        <div class="floor-bays">
+                            <h3>Floor</h3>
+                            <div class="parking-spot car-bay" data-position="floor-3" data-type="floor" data-vehicle-type="car">
+                                <span class="spot-label">Base</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bike Storage (Right Side) -->
+            <div class="bike-section">
+                <h3>🏍️ Bike Storage</h3>
+                <div id="bikeStorage" class="bike-storage">
+                    <!-- Bikes will be added dynamically here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Available Vehicles Pools -->
+        <div class="available-vehicles-bar">
+            <div class="available-pool">
+                <h3>Available Cars</h3>
+                <div id="availableCarsList" class="vehicle-pool"></div>
+            </div>
+            <div class="available-pool">
+                <h3>Available Bikes</h3>
+                <div id="availableBikesList" class="vehicle-pool"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Vehicle Modal -->
+    <div id="vehicleModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Vehicle</h2>
+                <span class="close">&times;</span>
+            </div>
+            <form id="vehicleForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="vehicleMake">Make *</label>
+                        <input type="text" id="vehicleMake" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleModel">Model *</label>
+                        <input type="text" id="vehicleModel" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleYear">Year *</label>
+                        <input type="number" id="vehicleYear" min="1900" max="2030" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleColor">Color</label>
+                        <input type="color" id="vehicleColor">
+                    </div>
+                    <div class="form-group">
+                        <label for="vehicleOwner">Owner *</label>
+                        <input type="text" id="vehicleOwner" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vehiclePlate">License Plate</label>
+                        <input type="text" id="vehiclePlate">
+                    </div>
+                </div>
+
+                <div id="carFieldsSection">
+                    <h3 class="section-title">Car Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="engineType">Engine Type</label>
+                            <input type="text" id="engineType" placeholder="e.g., V6, I4, Electric">
+                        </div>
+                        <div class="form-group">
+                            <label for="engineSize">Engine Size</label>
+                            <input type="text" id="engineSize" placeholder="e.g., 3.0L, 2.0L">
+                        </div>
+                        <div class="form-group">
+                            <label for="horsepower">Horsepower (HP)</label>
+                            <input type="number" id="horsepower" placeholder="e.g., 450">
+                        </div>
+                        <div class="form-group">
+                            <label for="zeroToHundred">0-100 km/h (seconds)</label>
+                            <input type="number" id="zeroToHundred" step="0.1" placeholder="e.g., 3.5">
+                        </div>
+                        <div class="form-group">
+                            <label for="curbWeight">Curb Weight (kg)</label>
+                            <input type="number" id="curbWeight" placeholder="e.g., 1580">
+                        </div>
+                        <div class="form-group">
+                            <label for="tirePressureFront">Tire Pressure Front (PSI)</label>
+                            <input type="number" id="tirePressureFront" step="0.1" placeholder="e.g., 32">
+                        </div>
+                        <div class="form-group">
+                            <label for="tirePressureRear">Tire Pressure Rear (PSI)</label>
+                            <input type="number" id="tirePressureRear" step="0.1" placeholder="e.g., 32">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="storageNotes">Storage Notes</label>
+                            <textarea id="storageNotes" rows="3" placeholder="Any special storage instructions..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bikeFieldsSection" style="display: none;">
+                    <h3 class="section-title">Bike Details</h3>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="bikeType">Bike Type</label>
+                            <input type="text" id="bikeType" placeholder="e.g., Sport, Cruiser, Dirt">
+                        </div>
+                        <div class="form-group">
+                            <label for="engineSize">Engine Size</label>
+                            <input type="text" id="bikeEngineSize" placeholder="e.g., 1000cc, Electric">
+                        </div>
+                        <div class="form-group">
+                            <label for="bikeHorsepower">Horsepower (HP)</label>
+                            <input type="number" id="bikeHorsepower" placeholder="e.g., 200">
+                        </div>
+                        <div class="form-group">
+                            <label for="bikeWeight">Weight (kg)</label>
+                            <input type="number" id="bikeWeight" placeholder="e.g., 200">
+                        </div>
+                        <div class="form-group full-width">
+                            <label for="bikeStorageNotes">Storage Notes</label>
+                            <textarea id="bikeStorageNotes" rows="3" placeholder="Any special storage instructions..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <input type="hidden" id="vehicleId">
+                <input type="hidden" id="vehicleType" value="car">
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Vehicle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Vehicle Details Modal -->
+    <div id="vehicleDetailsModal" class="modal">
+        <div class="modal-content large">
+            <div class="modal-header">
+                <h2 id="detailsVehicleName">Vehicle Details</h2>
+                <span class="close" id="closeDetails">&times;</span>
+            </div>
+            <div class="vehicle-details-content">
+                <div class="details-main">
+                    <div id="vehicleDetailsInfo" class="details-info"></div>
+                    <div class="details-actions">
+                        <button id="editVehicleBtn" class="btn-secondary">Edit Vehicle</button>
+                        <button id="deleteVehicleBtn" class="btn-danger">Delete Vehicle</button>
+                    </div>
+                </div>
+
+                <div class="service-history-section">
+                    <div class="service-header">
+                        <h3>Service History</h3>
+                        <button id="addServiceBtn" class="btn-primary btn-sm">+ Add Service</button>
+                    </div>
+
+                    <div id="addServiceForm" class="service-form hidden">
+                        <div class="form-group">
+                            <label for="serviceDate">Date</label>
+                            <input type="date" id="serviceDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceType">Service Type</label>
+                            <select id="serviceType">
+                                <option value="Oil Change">Oil Change</option>
+                                <option value="Tire Rotation">Tire Rotation</option>
+                                <option value="Brake Service">Brake Service</option>
+                                <option value="Battery Check">Battery Check</option>
+                                <option value="General Maintenance">General Maintenance</option>
+                                <option value="Repair">Repair</option>
+                                <option value="Inspection">Inspection</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceMileage">Mileage</label>
+                            <input type="number" id="serviceMileage" placeholder="Current mileage">
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceNotes">Notes</label>
+                            <textarea id="serviceNotes" rows="2" placeholder="Service details..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="serviceCost">Cost ($)</label>
+                            <input type="number" id="serviceCost" step="0.01" placeholder="0.00">
+                        </div>
+                        <div class="service-form-actions">
+                            <button type="button" id="cancelServiceBtn" class="btn-secondary btn-sm">Cancel</button>
+                            <button type="button" id="saveServiceBtn" class="btn-primary btn-sm">Save Service</button>
+                        </div>
+                    </div>
+
+                    <div id="serviceHistoryList" class="service-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
